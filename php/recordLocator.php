@@ -5,7 +5,7 @@ function recordLocator($oclcNum) {
 
 	//fix oclc number by stripping out all letters, as it sometimes comes with ocm, ocn, etc prefix
 	$oclcNum = preg_replace('/[a-z]/', '', $oclcNum);
-
+	$oclcNum = ltrim($oclcNum, '0');
 	//take value and add to query
 	$my_query = $URL . $oclcNum;
 

@@ -378,7 +378,7 @@ $(function () {
 		$('.worldcat-stack').stackView({
 			url: "../php/WSUCatalog.php",
 			jsonp: true,
-			search_type: '<?php echo $_GET['type'];?>',
+			search_type: '<?php if (isset($_GET['type'])) { $type = $_GET['type']; echo $type;} else { $type = 'lc'; echo $type;}?>',
 			query: '<?php echo $_GET['q'];?>'});
     });
     });
