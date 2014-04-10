@@ -23,6 +23,10 @@
 
 // THINGS TO FIX
 // 4. Fix Google Books and other API checks.
+require_once('recordLocator.php');
+require_once('functions.php');
+require_once('settings.php');
+require_once('marc_field_names.php');
 // **************************************
 // TESTING PARAMETERS
 // ****USE THESE************
@@ -34,42 +38,26 @@
 // $query = 'PS3553.A43956';
 // $query = 'Z 39';
 // $query = 'TA 418.9 .N35 G47 2007';
-// $query = 'LD 5889 .W42 A73 2009';
+$query = 'LD 5889 .W42 A73 2009';
 
-// $type = 'lc';
-// $callback = '';
-// $count = '';
-// $offset = 0;
-// require_once('recordLocator.php');
-// require_once('functions.php');
-// require_once('settings.php');
-// require_once('marc_field_names.php');
+$type = 'lc';
+$callback = '';
+$count = '';
+$offset = 0;
 // *****USE THESE**********
 
-require_once('recordLocator.php');
-$call = $_POST['call'];
-if ($call == "first") {
-  require_once('functions.php');
-}
-elseif ($call == "second") {
-  require_once('functions_process.php');
-}
-require_once('settings.php');
-require_once('marc_field_names.php');
+// $query = $_POST['query'];
+// $type = $_POST['search_type'];
+// $callback = $_POST['callback'];
+// $offset = $_POST['start'];
+// $count = $_POST['limit'];
+// if (!empty($_POST['ajaxType'])) {
+//     $ajaxType = $_POST['ajaxType'];
 
-
-$query = $_POST['query'];
-$type = $_POST['search_type'];
-$callback = $_POST['callback'];
-$offset = $_POST['start'];
-$count = $_POST['limit'];
-if (!empty($_POST['ajaxType'])) {
-    $ajaxType = $_POST['ajaxType'];
-
-}
-else {
-    $ajaxType = '';
-}
+// }
+// else {
+//     $ajaxType = '';
+// }
 
 
 
@@ -95,9 +83,13 @@ elseif ($type == 'lc') {
     $eventInfo['LCCallNums'] = Z3950Router("yaz_scan",$eventInfo['LCNumber']);
     $eventInfo['fullRecords'] = array();
     foreach($eventInfo['LCCallNums'] as $query){
+    error_log("starting");
     $eventInfo['Z3950Results'] = Z3950Router("yaz_search",$query);
+    error_log("done");
     array_push($eventInfo['stackviewRecords'], $eventInfo['Z3950Results']['stackviewRecords']);
+    error_log("done2");
     array_push($eventInfo['fullRecords'], $eventInfo['Z3950Results']['fullRecords']);
+    error_log("ending");
   }
 }
 

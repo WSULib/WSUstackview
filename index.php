@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <!-- Piwik -->
-<script type="text/javascript">
+ <script type="text/javascript">
  var _paq = _paq || [];
  _paq.push(["trackPageView"]);
  _paq.push(["enableLinkTracking"]);
@@ -388,17 +388,99 @@ $(document).ajaxComplete(function()
 
 	<script type="text/javascript">
 $(document).ready(function() {
+$.ajax({
+  type: "POST",
+  url: "php/WSUCatalog.php",
+  data: {call:'<?php echo "first" ?>', search_type: '<?php if (isset($_GET['type'])) { $type = $_GET['type']; echo $type;} else { $type = 'lc'; echo $type;}?>', query: '<?php if (isset($_GET['q'])) { $q = $_GET['q']; echo $q;} else { $q = 'LD 5889 .W42 A73 2009'; echo $q;}?>'},  
+  dataType: "json",
+  success: Success,
+  error: Error
+});
 
-$(function () { 
-		$('.worldcat-stack').stackView({
-			url: "php/WSUCatalog.php",
-			jsonp: true,
-			search_type: '<?php if (isset($_GET['type'])) { $type = $_GET['type']; echo $type;} else { $type = 'lc'; echo $type;}?>',
-			query: '<?php if (isset($_GET['q'])) { $q = $_GET['q']; echo $q;} else { $q = 'LD 5889 .W42 A73 2009'; echo $q;}?>'});
-    });
-    });
+function Success (response){
+  if (response['stackviewRecords'].length == 0){
+      $('.worldcat-stack').html("Your search did not find any records.  Please try again.");
+  }
+  else {
+      $(function () {
+        var json_loc = "json/temp/"+response.tempfile;
+        $('.worldcat-stack').stackView({
+          url: json_loc,
+        });
+      });
+  }
 
-    </script>
+}
+
+function Error (response){
+  console.log("this didn't work");
+  $('.worldcat-stack').html("Your search did not find any records.  Please try again.");
+  console.log(response);
+}
+
+// secondary call to grab organized MARC data
+
+$.ajax({
+  type: "POST",
+  url: "php/WSUCatalog.php",
+  data: {call:'<?php echo "second" ?>', search_type: '<?php if (isset($_GET['type'])) { $type = $_GET['type']; echo $type;} else { $type = 'lc'; echo $type;}?>', query: '<?php if (isset($_GET['q'])) { $q = $_GET['q']; echo $q;} else { $q = 'LD 5889 .W42 A73 2009'; echo $q;}?>'},  
+  dataType: "json",
+  success: Success2,
+  error: Error2
+});
+
+function Success2 (response2){
+
+  if (response2['stackviewRecords'].length == 0){
+      $('.worldcat-stack').html("Your search did not find any records.  Please try again.");
+  }
+  else {
+  console.log("this worked!");
+  console.log(response2);
+
+  }
+
+}
+
+function Error2 (response){
+  console.log("this didn't work");
+  console.log(response);
+}
+
+
+
+// Individual book info call
+$('h1').click(function () {
+
+  $.ajax({
+    type: "POST",
+    url: "php/ebookChecker.php",
+    // li.stack-item.stack-book.highlight-book.css('zIndex');
+    data: {oclc: 276228966, isbn: 1872291317},  
+    dataType: "json",
+    success: Success,
+    error: Error
+  });
+
+  function Success (click_response){
+    console.log("you clicked!");
+    console.log(click_response);
+
+
+  }
+
+  function Error (click_response){
+    console.log("this CLICK didn't work");
+    $('.worldcat-stack').html("Your search did not find any records.  Please try again.");
+    console.log(click_response);
+  }
+
+
+
+
+});
+});
+</script>
 
 <!-- js just for this page -->
 <script type="text/javascript" src="http://balupton.github.com/jquery-syntaxhighlighter/scripts/jquery.syntaxhighlighter.min.js"></script>

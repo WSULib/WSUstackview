@@ -125,6 +125,13 @@ function yazSearch ($yazCall, $session, $search, $query) {
 
         $XMLArray = XMLtoArray($xml);
         // print_r($XMLArray);
+        // return $eventInfo['parsedResults'] = $XMLArray;
+        for ($i = 0; $i < sizeof($XMLArray['bibliographicRecord']['record']['datafield']); $i++) {
+            if ($XMLArray['bibliographicRecord']['record']['datafield'][$i]['@attributes']['tag'] !== null){
+                $XMLArray['bibliographicRecord']['record']['datafield'][$i]['@attributes']['tag'] = "field_".$XMLArray['bibliographicRecord']['record']['datafield'][$i]['@attributes']['tag'];
+            }
+        }
+        // print_r($XMLArray);
         $eventInfo['parsedResults'] = createMARCArray($XMLArray, $query, $eventInfo);
         }
 
@@ -146,7 +153,7 @@ return $eventInfo['parsedResults'];
 function XMLtoArray ( $xmlObject, $out = array () ) {
     // place raw xml into array
         foreach ( json_decode(json_encode($xmlObject), true) as $index => $node )
-            $out['fullRecords'][$index] = ( is_object ( $node ) ) ? XMLtoArray ( $node ) : $node;
+            $out[$index] = ( is_object ( $node ) ) ? XMLtoArray ( $node ) : $node;
         return $out;
 }
 
@@ -154,127 +161,149 @@ function createMARCArray ($XMLArray, $query, $eventInfo) {
     // create ordered and structured, full MARC and stackview MARC records
     include('marc_field_names.php');
 
-    $MARC = svRecordCreator($XMLArray, $query, $eventInfo);
+    $countArray = dupChecker($XMLArray);
+
+    $M1 = RepeatedFieldHandler($XMLArray, $countArray, $query);
+
+    $M2 = singFieldHandler($XMLArray, $countArray, $query);
+    $M3['holdings_information'] = extractHoldingsInfo($XMLArray, $query);
+    $MARC['fullRecords'][$query] = array_merge((array)$M1, $M2, $M3);
+    // print_r($MARC);
+
+
+    ksort($MARC['fullRecords'][$query]);
+    // give field names
+    foreach ($MARC['fullRecords'][$query] as $origKey => $value){
+      if (isset($marc_field_names[$origKey])) {
+        $newKey = $marc_field_names[$origKey];        
+        $MARC['fullRecords'][$query][$origKey]['field_name'] = $newKey;
+      }
+
+      else {
+        $MARC['fullRecords'][$query][$origKey]['field_name'] = "None";
+      }
+
+    }
+
+    $MARC = svRecordCreator($MARC, $query, $eventInfo);
 
     return $MARC;
 }
 
 
+
+
+function dupChecker($XMLArray) {
+      // determine repeating fields
+    $tempArray = array();
+    for ($i = 0; $i < sizeof($XMLArray['bibliographicRecord']['record']['datafield']); $i++) {
+      if ($XMLArray['bibliographicRecord']['record']['datafield'][$i]['@attributes']['tag'] !== null){
+        $tempArray[] = $XMLArray['bibliographicRecord']['record']['datafield'][$i]['@attributes']['tag'];
+      }
+    }
+  $countArray = array_count_values($tempArray);
+  return $countArray;
+}
+
+function RepeatedFieldHandler($XMLArray, $countArray, $query) {
+    $MARC = null;
+      // put all the multiple values into arrays
+    for ($i = 0; $i < sizeof($XMLArray['bibliographicRecord']['record']['datafield']); $i++) {
+            $MARC[$XMLArray['bibliographicRecord']['record']['datafield'][$i]['@attributes']['tag']] = array();
+    }
+    for ($i = 0; $i < sizeof($XMLArray['bibliographicRecord']['record']['datafield']); $i++) {
+
+        $num = $countArray[$XMLArray['bibliographicRecord']['record']['datafield'][$i]['@attributes']['tag']];
+        $subfield = $XMLArray['bibliographicRecord']['record']['datafield'][$i]['subfield'];
+
+        if ($num > 1) {
+            // make this key value pair which is an array and fill it with that stuff
+            if (sizeof($subfield) > 1) {
+            // Make field number and subfield a key value pair
+              $MARC[$XMLArray['bibliographicRecord']['record']['datafield'][$i]['@attributes']['tag']][] = implode(" ", (array) $subfield);
+              $MARC[$XMLArray['bibliographicRecord']['record']['datafield'][$i]['@attributes']['tag']]['split'] = $subfield;
+            }
+
+            else {
+
+              array_push($MARC[$XMLArray['bibliographicRecord']['record']['datafield'][$i]['@attributes']['tag']], $subfield);
+            }              
+        }
+        else {
+            continue;
+        }
+    }
+    return $MARC;
+}
+
+function singFieldHandler($XMLArray, $countArray, $query) {
+      // put single values in key value pairs
+for ($i = 0; $i < sizeof($XMLArray['bibliographicRecord']['record']['datafield']); $i++) {
+
+        $subfield = $XMLArray['bibliographicRecord']['record']['datafield'][$i]['subfield'];
+        $num = $countArray[$XMLArray['bibliographicRecord']['record']['datafield'][$i]['@attributes']['tag']];
+
+        if ($num == 1) {
+            if (sizeof($subfield) > 1) {
+                 // Make field number and subfield a key value pair
+                $MARC[$XMLArray['bibliographicRecord']['record']['datafield'][$i]['@attributes']['tag']][] = implode(" ", (array) $subfield);         
+                $MARC[$XMLArray['bibliographicRecord']['record']['datafield'][$i]['@attributes']['tag']]['split'] = (array) $subfield;
+            }
+
+            else {
+                $MARC[$XMLArray['bibliographicRecord']['record']['datafield'][$i]['@attributes']['tag']][] = $XMLArray['bibliographicRecord']['record']['datafield'][$i]['subfield'];
+            }
+          }
+    }
+
+    return $MARC;
+  }
+
+function extractHoldingsInfo($XMLArray, $query) {
+    $MARC = array();
+    if (is_array($XMLArray['holdings']['holding'])){
+       $MARC = array_merge($MARC, $XMLArray['holdings']['holding']);
+    }
+    else {
+      $MARC['answer'] = "not array";  
+    }
+
+    return $MARC;
+}
+
 function svRecordCreator($MARC, $query, $eventInfo) {
     // Now go make your list of results for Stack View
+    $MARC['stackviewRecords']['title'] = $MARC['fullRecords'][$query]['field_245'][0];
 
-    for ($i = 0; $i < sizeof($MARC['fullRecords']['bibliographicRecord']['record']['datafield']); $i++){
-        foreach($MARC['fullRecords']['bibliographicRecord']['record']['datafield'][$i]['@attributes'] as $k => $v){
-             if ($MARC['fullRecords']['bibliographicRecord']['record']['datafield'][$i]['@attributes']['tag'] == "245") {
-                if (sizeof($MARC['fullRecords']['bibliographicRecord']['record']['datafield'][$i]['subfield']) > 1) {
-                    $MARC['stackviewRecords']['title'] = implode(" ", $MARC['fullRecords']['bibliographicRecord']['record']['datafield'][$i]['subfield']);
-                }
-                else {
-                    $MARC['stackviewRecords']['title'] = $MARC['fullRecords']['bibliographicRecord']['record']['datafield'][$i]['subfield'];
-                }
-             }
+    if (isset($MARC['fullRecords'][$query]['field_100'][0]) == FALSE){$MARC['stackviewRecords']['creator'] = " ";}
+    else {$MARC['stackviewRecords']['creator'] = $MARC['fullRecords'][$query]['field_100'][0];}
 
-             if ($MARC['fullRecords']['bibliographicRecord']['record']['datafield'][$i]['@attributes']['tag'] == "100") {
-                if (sizeof($MARC['fullRecords']['bibliographicRecord']['record']['datafield'][$i]['subfield']) > 1) {
-                    $MARC['stackviewRecords']['creator'] = implode(" ", $MARC['fullRecords']['bibliographicRecord']['record']['datafield'][$i]['subfield']);
-                }
-                else {
-                    $MARC['stackviewRecords']['creator'] = $MARC['fullRecords']['bibliographicRecord']['record']['datafield'][$i]['subfield'];
-                }
-             }
-             elseif (isset($MARC['stackviewRecords']['title']) == FALSE && $MARC['fullRecords']['bibliographicRecord']['record']['datafield'][$i]['@attributes']['tag'] == "110") {
-                if (sizeof($MARC['fullRecords']['bibliographicRecord']['record']['datafield'][$i]['subfield']) > 1) {
-                    $MARC['stackviewRecords']['creator'] = implode(" ", $MARC['fullRecords']['bibliographicRecord']['record']['datafield'][$i]['subfield']);
-                }
-                else {
-                    $MARC['stackviewRecords']['creator'] = $MARC['fullRecords']['bibliographicRecord']['record']['datafield'][$i]['subfield'];
-                    }                
-             }
-             elseif (isset($MARC['stackviewRecords']['title']) == FALSE && $MARC['fullRecords']['bibliographicRecord']['record']['datafield'][$i]['@attributes']['tag'] == "111") {
-                if (sizeof($MARC['fullRecords']['bibliographicRecord']['record']['datafield'][$i]['subfield']) > 1) {
-                    $MARC['stackviewRecords']['creator'] = implode(" ", $MARC['fullRecords']['bibliographicRecord']['record']['datafield'][$i]['subfield']);    
-                }
-                else {
-                $MARC['stackviewRecords']['creator'] = $MARC['fullRecords']['bibliographicRecord']['record']['datafield'][$i]['subfield'];                        
-                }
-         
-             }
+    if (isset($MARC['fullRecords'][$query]['field_300']['split'][0]) == FALSE){$MARC['fullRecords'][$query]['field_300']['split'][0] = " ";}
+    else {$page_num = trim(preg_replace('*[^0-9 ]*', '', $MARC['fullRecords'][$query]['field_300']['split'][0]));
+    $MARC['stackviewRecords']["measurement_page_numeric"] = intval($page_num);}
+    
+    $height_cm = trim(preg_replace('*[^\s]+[^0-9]*', '', trim(preg_replace('*[^0-9 ]*', '', end($MARC['fullRecords'][$query]['field_300']['split'])))));
+    $MARC['stackviewRecords']["measurement_height_numeric"] = intval($height_cm);
 
-             if ($MARC['fullRecords']['bibliographicRecord']['record']['datafield'][$i]['@attributes']['tag'] == "300") {
-                if (sizeof($MARC['fullRecords']['bibliographicRecord']['record']['datafield'][$i]['subfield']) > 1) {
-                    $temp = implode(" ", $MARC['fullRecords']['bibliographicRecord']['record']['datafield'][$i]['subfield']);
-                    $page_num = preg_match('/(\d*\sp.)/', $temp, $matches);
-                    if (isset($matches[0])) {
-                        $page_num = trim(preg_replace('*[^0-9]*', '', $matches[0]));
-                        $MARC['stackviewRecords']["measurement_page_numeric"] = intval($page_num);
-                    }
-                    $height_cm = trim(preg_replace('*[^\s]+[^0-9]*', '', trim(preg_replace('*[^0-9 ]*', '', $temp))));
-                    $MARC['stackviewRecords']["measurement_height_numeric"] = intval($height_cm);
-                }
-                else {
-                    $page_num = preg_match('/(\d*\sp.)/', $MARC['fullRecords']['bibliographicRecord']['record']['datafield'][$i]['subfield'], $matches);
-                    if (isset($matches[0])) {
-                        $page_num = trim(preg_replace('*[^0-9]*', '', $matches[0]));
-                        $MARC['stackviewRecords']["measurement_page_numeric"] = intval($page_num);
-                    }
-                    $height_cm = trim(preg_replace('*[^\s]+[^0-9]*', '', trim(preg_replace('*[^0-9 ]*', '', $MARC['fullRecords']['bibliographicRecord']['record']['datafield'][$i]['subfield']))));
-                    $MARC['stackviewRecords']["measurement_height_numeric"] = intval($height_cm);                    
-                }
-             }
+    $date = trim(preg_replace('*[^0-9 ]*', '', end($MARC['fullRecords'][$query]['field_260']['split'])));
+    $MARC['stackviewRecords']['pub_date'] = intval($date);
 
-             if ($MARC['fullRecords']['bibliographicRecord']['record']['datafield'][$i]['@attributes']['tag'] == "260") {
-                if (sizeof($MARC['fullRecords']['bibliographicRecord']['record']['datafield'][$i]['subfield']) > 1) {
-                    $MARC['stackviewRecords']['pub_date'] = implode(" ", $MARC['fullRecords']['bibliographicRecord']['record']['datafield'][$i]['subfield']);
-                    $MARC['stackviewRecords']['pub_date']= intval(trim(preg_replace('*[^0-9]*', '', $MARC['stackviewRecords']['pub_date'])));
-                }
-                else {
-                    $MARC['stackviewRecords']['pub_date']= intval(trim(preg_replace('*[^0-9,. ]*', '', $MARC['fullRecords']['bibliographicRecord']['record']['datafield'][$i]['subfield'])));
-                }
-             }
-    //          //link
-        } //ends foreach
-    } //ends for
-
-    if (isset($MARC['stackviewRecords']['title']) == FALSE){$MARC['stackviewRecords']['title'] = " ";}
-    if (isset($MARC['stackviewRecords']['creator']) == FALSE){$MARC['stackviewRecords']['creator'] = " ";}
-    if (isset($MARC['stackviewRecords']['measurement_height_numeric']) == FALSE){$MARC['stackviewRecords']['measurement_height_numeric'] = " ";}
-    if (isset($MARC['stackviewRecords']['measurement_page_numeric']) == FALSE){$MARC['stackviewRecords']['measurement_page_numeric'] = " ";}
-    if (isset($MARC['stackviewRecords']['pub_date']) == FALSE){$MARC['stackviewRecords']['pub_date'] = " ";}
     //Adding in shelfrank manually until each record shows usage stats
     $MARC['stackviewRecords']["shelfrank"] = 40;
-
-
-
-
-    // if (isset($MARC['fullRecords'][$query]['field_100'][0]) == FALSE){$MARC['stackviewRecords']['creator'] = " ";}
-    // else {$MARC['stackviewRecords']['creator'] = $MARC['fullRecords'][$query]['field_100'][0];}
-
-    // if (isset($MARC['fullRecords'][$query]['field_300']['split'][0]) == FALSE){$MARC['fullRecords'][$query]['field_300']['split'][0] = " ";}
-    // else {$page_num = trim(preg_replace('*[^0-9 ]*', '', $MARC['fullRecords'][$query]['field_300']['split'][0]));
-    // $MARC['stackviewRecords']["measurement_page_numeric"] = intval($page_num);}
-    
-    // $height_cm = trim(preg_replace('*[^\s]+[^0-9]*', '', trim(preg_replace('*[^0-9 ]*', '', end($MARC['fullRecords'][$query]['field_300']['split'])))));
-    // $MARC['stackviewRecords']["measurement_height_numeric"] = intval($height_cm);
-
-    // $date = trim(preg_replace('*[^0-9 ]*', '', end($MARC['fullRecords'][$query]['field_260']['split'])));
-    // $MARC['stackviewRecords']['pub_date'] = intval($date);
-
-    // //Adding in shelfrank manually until each record shows usage stats
-    // $MARC['stackviewRecords']["shelfrank"] = 40;
-    // if (isset($MARC['fullRecords'][$query]['field_035'][0])) {
-    //     $MARC['fullRecords']["link"] = recordLocator(preg_replace('*[^0-9]*', '', $MARC['fullRecords'][$query]['field_035'][0]));
-    //     $MARC['stackviewRecords']["link"] = '#';
-    //     //Reorder array to make link come last; stackview is very particular about its order
-    //     $v = $MARC['stackviewRecords']["link"];
-    //     unset($MARC['stackviewRecords']["link"]);
-    //     $MARC['stackviewRecords']["link"] = $v;
-    // }
-    // else {
-    //     $query = str_replace(" ", "+", $query);
-    //     $query = str_replace ('"', "", $query);
-    //     $MARC['fullRecords']["link"] = "$eventInfo[alternateLink]" . "$query";
-    //     $MARC['stackviewRecords']["link"] = '#';            
-    // }
+    if (isset($MARC['fullRecords'][$query]['field_035'][0])) {
+        $MARC['fullRecords']["link"] = recordLocator(preg_replace('*[^0-9]*', '', $MARC['fullRecords'][$query]['field_035'][0]));
+        $MARC['stackviewRecords']["link"] = '#';
+        //Reorder array to make link come last; stackview is very particular about its order
+        $v = $MARC['stackviewRecords']["link"];
+        unset($MARC['stackviewRecords']["link"]);
+        $MARC['stackviewRecords']["link"] = $v;
+    }
+    else {
+        $query = str_replace(" ", "+", $query);
+        $query = str_replace ('"', "", $query);
+        $MARC['fullRecords']["link"] = "$eventInfo[alternateLink]" . "$query";
+        $MARC['stackviewRecords']["link"] = '#';            
+    }
     return $MARC;
 
   }
@@ -353,19 +382,19 @@ function googleSearch ($oclc, $isbn) {
     //                  if ($rawData['items']['accessInfo']['country'] == "US") {
     //                         $googleData['Google']['provider'] = "Google Books";
     //                         switch($rawData['items']['accessInfo']['viewability']) {
-    //                             case 'PARTIAL':
+    //                             case PARTIAL:
     //                                 $access = "partial access";
     //                             break;
 
-    //                             case 'ALL_PAGES':
+    //                             case ALL_PAGES:
     //                                 $access = "full access";
     //                             break;
 
-    //                             case 'NO_PAGES':
+    //                             case NO_PAGES:
     //                                 $access = "no access";
     //                             break;
 
-    //                             case 'UNKNOWN':
+    //                             case UNKNOWN:
     //                                 $access = "no access";
     //                             break;
     //                         }
@@ -394,19 +423,19 @@ function googleSearch ($oclc, $isbn) {
              if ($rawData['items'][0]['accessInfo']['country'] == "US") {
                     $googleData['Google']['provider'] = "Google Books";
                         switch($rawData['items'][0]['accessInfo']['viewability']) {
-                            case 'PARTIAL':
+                            case PARTIAL:
                                 $access = "partial access";
                                 break;
 
-                            case 'ALL_PAGES':
+                            case ALL_PAGES:
                                 $access = "full access";
                                 break;
 
-                            case 'NO_PAGES':
+                            case NO_PAGES:
                                 $access = "no access";
                                 break;
 
-                            case 'UNKNOWN':
+                            case UNKNOWN:
                                 $access = "no access";
                                 break;
                         }
@@ -439,17 +468,17 @@ function fedoraSearch ($oclc) {
     $URL = "http://silo.lib.wayne.edu/WSUAPI/?functions[]=solrSearch&solrParams=".$CollectionListParams;
     $APIcallURL = file_get_contents("http://silo.lib.wayne.edu/WSUAPI/?functions[]=solrSearch&solrParams=".$CollectionListParams);
         // parse Fedora status
-    $rawData = json_decode($APIcallURL, true);
+    $rawData = json_decode($CollectionListParams, true);
         foreach($rawData as $key) {
-            if ($rawData['solrSearch']['response']['numFound'] == 0 ) {
+            if ($rawData['rows'] == 0 ) {
             $fedoraData['Fedora']['provider'] = "Wayne State Digital Object Repository";
-            $fedoraData['Fedora']['link'] = "no url";
+            $fedoraData['Fedora']['link'] = $URL;
             $fedoraData['Fedora']['access'] = "no access";
             }
 
             else {
             $fedoraData['Fedora']['provider'] = "Wayne State Digital Object Repository";
-            $fedoraData['Fedora']['link'] = "http://silo.lib.wayne.edu/eTextReader/eTextReader.php?ItemID=".$rawData['solrSearch']['response']['docs'][0]['id']."#page/1/mode/2up";
+            $fedoraData['Fedora']['link'] = "http://silo.lib.wayne.edu/eTextReader/eTextReader.php?ItemID=".$rawData['response']['docs'][0]['id']."#page/1/mode/2up";
             $fedoraData['Fedora']['access'] = "full access";
             }
         }
@@ -462,21 +491,42 @@ function openlibrarySearch ($isbn) {
     $openlibrary = file_get_contents("http://openlibrary.org/api/volumes/brief/isbn/".$isbn.".json");
         // parse openlibrary status - json
         $openlibraryData = array();
-        $rawData = json_decode($openlibrary, true);
-        // return $rawData;
-        if ($rawData['items'] == null) {
+        $rawData = json_decode($openlibrary);
+        if ($rawData == null) {
         $openlibraryData['openlibrary']['provider'] = "Open Library";
-        $openlibraryData['openlibrary']['access'] = "no access; <a href='https://openlibrary.org/search?q=$isbn'>click</a> to check if the book is available in some other format.";
+        $openlibraryData['openlibrary']['access'] = "no access";
         }
 
         else {
-            foreach ($rawData['records'] as $key) {
+            foreach ($rawData as $key) {
             $openlibraryData['openlibrary']['provider'] = "Open Library";
-            $openlibraryData['openlibrary']['link'] = $rawData['records'][$key]['items'][0]['itemURL'];
-            $openlibraryData['openlibrary']['access'] = $rawData['records'][$key]['items'][0]['status'];
+            $openlibraryData['openlibrary']['link'] = $rawData['records']['items'][0]['itemURL'];
+            $openlibraryData['openlibrary']['access'] = $rawData['records']['items'][0]['status'];
             }
         }
-    return (array)$openlibraryData;
+    return $openlibraryData;
+
 }
 
+// CHECKS BOOK STATUS IN CATALOG
+function bookStatus () {
+    // INITIAL, BASIC YAZ SETUP
+    $search = "@attr 1=16 $query";
+
+    $session = yaz_connect($eventInfo['server']);
+    yaz_schema($session, 'OID 1.2.840.10003.5.101');
+
+    if (yaz_error($session) != ""){
+        die("Error: " . yaz_error($session));
+    }
+
+    yaz_syntax($session, $eventInfo['syntax']);
+
+    yaz_search($session, "rpn", $search);
+    // wait blocks until the query is done
+    yaz_wait();
+    $result = yaz_record($session, $p, "xml");
+    return $result;
+    yaz_close($session);
+}
 ?>
