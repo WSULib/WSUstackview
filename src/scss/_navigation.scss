@@ -3,9 +3,8 @@
 ***************/
 .stack-navigation {
 	position:absolute;
-	right:500px;
-	top:95%;
-	margin-top:-69px;
+	right:-10px;
+	top:845px;
 	width:41px;
 	text-align:center;
 	z-index:15;
@@ -51,7 +50,8 @@
 	.num-found {
 		font-size:15px;
 		line-height:16px;
-		margin:10px 0;
+		padding-top: 15px;
+		margin:8px 0;
 		color:#333;
 		text-shadow: 0 1px 0 #ddd;
 		@include rotate(90deg);

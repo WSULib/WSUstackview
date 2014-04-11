@@ -29,7 +29,7 @@
 
 		template: '\
 			<li class="stack-item stack-webpage heat<%= heat %>">\
-				<a href="<%= link %>" target="_blank">\
+				<a href="<%= link %>">\
 					<span class="url-bar">\
 						<span class="url-publisher"><%= publisher %>:</span>\
 						<span class="url-title"><%= title %></span>\

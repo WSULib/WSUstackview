@@ -1,7 +1,6 @@
 (function(undefined) {
 	StackView.templates = {
 		scaffold: '\
-			<!--<div class="ribbon"><%= ribbon %></div>-->\
 			<ul class="stack-items" />',
 		
 		navigation: '\
@@ -14,15 +13,15 @@
 			</div>',
 		
 		book: '\
-			<li class="stack-item stack-book heat<%= heat %>" style="width:<%= book_height %>; height:<%= book_thickness %>;">\
-				<a href="<%= link %>" target="_newtab">\
+			<li class="stack-item stack-book heat<%= heat %>" style="width:<%= book_height %>; height:<%= book_thickness %>;" title="<%= title %>">\
+				<a href="<%= link %>">\
 					<span class="spine-text">\
 						<span class="spine-title"><%= title %></span>\
 					</span>\
 					<span class="spine-year"><%= year %></span>\
 					<span class="stack-pages" />\
 					<span class="stack-cover" />\
-					<span class="spine-author"><%= author %></span>\
+					<!--<span class="spine-author"><%= author %></span>-->\
 				</a>\
 			</li>',
 		

@@ -43,7 +43,7 @@
 
 		template: '\
 			<li class="stack-item stack-videofilm heat<%= heat %>" style="width:<%= height %>;">\
-				<a href="<%= link %>" target="_blank">\
+				<a href="<%= link %>">\
 					<span class="spine-text">\
 						<span class="spine-title"><%= title %></span>\
 					</span>\

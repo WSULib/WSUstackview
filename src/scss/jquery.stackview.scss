@@ -9,14 +9,15 @@
 
 .stackview {
 	font-family:"Helvetica Neue", sans-serif;
-	position:relative;
+	position:absolute;
 	height:960px;
 	width: auto;
 	margin:0 auto;
-	margin-top: -420px;
-	padding:0 0 0 65px;
+	top: -55px;
+	margin-left: 277px;
+	padding:0 75px 0 0;
 	overflow:hidden;
-	//outline: 1px solid black;
+	z-index: 1;
 	@include rotate(-90deg);
 	
 	* {
@@ -29,7 +30,7 @@
 .stack-items {
 	list-style:none;
 	height:100%;
-	width:550px;
+	width:520px;
 	overflow:auto;
 	//padding-right:40px;
 	position:relative;
@@ -134,8 +135,8 @@
 	z-index:3;
 	top:50%;
 	left:1px;
-	width:36px;
-	height:16px;
+	width:30px;
+	height:15px;
 	line-height:15px;
 	background:#f9fceb;
 	font-size:9.5px;
@@ -188,3 +189,7 @@
 @import "webpage";
 
 @import "ministack";
+
+@import "old";
+@import "search";
+@import "shelf";

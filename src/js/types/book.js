@@ -169,11 +169,11 @@
 		},
 
 		template: '\
-			<li class="stack-item stack-book heat<%= heat %>" style="width:<%= book_height %>; height:<%= book_thickness %>;">\
-				<a href="<%= link %>" target="_blank">\
+			<li class="stack-item stack-book heat<%= heat %>" style="width:<%= book_height %>; height:<%= book_thickness %>;" title="<%= title %>">\
+				<a href="<%= link %>">\
 					<span class="spine-text">\
 						<span class="spine-title"><%= title %></span>\
-						<span class="spine-author"><%= author %></span>\
+						<!--<span class="spine-author"><%= author %></span>-->\
 					</span>\
 					<span class="spine-year"><%= year %></span>\
 					<span class="stack-pages" />\
