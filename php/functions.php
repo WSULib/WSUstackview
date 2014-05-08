@@ -242,6 +242,7 @@ function svRecordCreator($MARC, $query, $eventInfo) {
     if (isset($MARC['stackviewRecords']['pub_date']) == FALSE){$MARC['stackviewRecords']['pub_date'] = " ";}
     //Adding in shelfrank manually until each record shows usage stats
     $MARC['stackviewRecords']["shelfrank"] = 40;
+    $MARC['stackviewRecords']['link'] = "#";
 
 
 
@@ -443,7 +444,6 @@ function fedoraSearch ($oclc) {
         foreach($rawData as $key) {
             if ($rawData['solrSearch']['response']['numFound'] == 0 ) {
             $fedoraData['Fedora']['provider'] = "Wayne State Digital Object Repository";
-            $fedoraData['Fedora']['link'] = "no url";
             $fedoraData['Fedora']['access'] = "no access";
             }
 
@@ -458,6 +458,7 @@ function fedoraSearch ($oclc) {
 }
 
 function openlibrarySearch ($isbn) {
+    if (is_numeric($isbn)){
     // get openlibrary status
     $openlibrary = file_get_contents("http://openlibrary.org/api/volumes/brief/isbn/".$isbn.".json");
         // parse openlibrary status - json
@@ -466,7 +467,8 @@ function openlibrarySearch ($isbn) {
         // return $rawData;
         if ($rawData['items'] == null) {
         $openlibraryData['openlibrary']['provider'] = "Open Library";
-        $openlibraryData['openlibrary']['access'] = "no access; <a href='https://openlibrary.org/search?q=$isbn'>click</a> to check if the book is available in some other format.";
+        $openlibraryData['openlibrary']['access'] = "no access";
+        $openlibraryData['openlibrary']['search'] = "<a href='https://openlibrary.org/search?q=$isbn' target='_blank'>Search Open Library</a>. ";
         }
 
         else {
@@ -476,6 +478,11 @@ function openlibrarySearch ($isbn) {
             $openlibraryData['openlibrary']['access'] = $rawData['records'][$key]['items'][0]['status'];
             }
         }
+    }
+    else {
+        $openlibraryData['openlibrary']['provider'] = "Open Library";
+        $openlibraryData['openlibrary']['access'] = "no isbn";        
+    }
     return (array)$openlibraryData;
 }
 

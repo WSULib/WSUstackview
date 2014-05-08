@@ -2,7 +2,6 @@
 
 function recordLocator($oclcNum) {
 	$URL = 'http://elibrary.wayne.edu/xmlopac/o';
-
 	//fix oclc number by stripping out all letters, as it sometimes comes with ocm, ocn, etc prefix
 	$oclcNum = preg_replace('/[a-z]/', '', $oclcNum);
 	$oclcNum = ltrim($oclcNum, '0');

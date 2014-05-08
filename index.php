@@ -30,6 +30,7 @@
 <!-- stackview.js and all js dependencies -->
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script>
 <script type="text/javascript" src="lib/jquery.stackview.min.js"></script>
+<script type="text/javascript" src="js/index.js"></script>
 
 <script type="text/javascript">
 $(document).ajaxComplete(function()
@@ -60,6 +61,20 @@ $(document).ajaxComplete(function()
               $('.tooltip')
               .css({ top: mousey, left: mousex })
       });
+
+    //       $("li.stack-item").unbind();
+    // $("li.stack-item").bind();
+    $("li.stack-item").click(function() {
+            var currentTitle = $(this).text();
+            $('.current-item .title').empty(currentTitle).append(currentTitle);
+            var num = 29 - parseInt($(this).css('zIndex'));
+            $('.current-item .callno').empty().append("Call No: "+obj2.LCCallNums[num])
+            $('.current-item .record').empty().append("<a href="+obj2.fullRecords[num].link+" target='_blank'>Catalog Record</a>");
+            holdingsANDStatus(obj2, num);
+            checkEbookStatus(obj2, num);
+
+    });
+
 });
 </script>
 </head>
@@ -68,14 +83,15 @@ $(document).ajaxComplete(function()
 	<h1>Wayne State University Libraries Stack View</h1>
   <h2>A book visualization and browsing tool—a virtual shelf</h2>
 
- <!--  <div class="current-item">
+  <div class="current-item">
     <div class="title"></div>
-    <span class="callno">Call #</span>
-    <span class="status">Checked In &amp; link to catalog</span>
-    <span class="location">Library location</span>
-    <span class="ebook">Ebook availability</span>
+    <span class="callno"></span>
+    <span class="status"></span>
+    <span class="record"></span>
+    <span class="location"></span>
+    <span class="ebook"></span>
   </div>
- -->	
+	
 	<div class="worldcat-stack">
    <div class="nores"></div> 
   </div>
@@ -101,98 +117,19 @@ $(document).ajaxComplete(function()
 
 	<script type="text/javascript">
 $(document).ready(function() {
-$.ajax({
-  type: "POST",
-  url: "php/WSUCatalog.php",
-  data: {call:'<?php echo "first" ?>', search_type: '<?php if (isset($_GET['type'])) { $type = $_GET['type']; echo $type;} else { $type = 'lc'; echo $type;}?>', query: '<?php if (isset($_GET['q'])) { $q = $_GET['q']; echo $q;} else { $q = 'LD 5889 .W42 A73 2009'; echo $q;}?>'},  
-  dataType: "json",
-  success: Success,
-  error: Error
-});
+  var search_type = "<?php if (isset($_GET['type'])) { $type = $_GET['type']; echo $type;} else { $type = 'lc'; echo $type;}?>";
+  var query = "<?php if (isset($_GET['q'])) { $q = $_GET['q']; echo $q;} else { $q = 'LD 5889 .W42 A73 2009'; echo $q;}?>";
+  // Populate stackview
+  populateStackview(search_type, query);
 
-function Success (response){
-  if (response['stackviewRecords'].length == 0){
-      $('.worldcat-stack .nores').html("Your search did not find any records.  Please try again.");
-  }
-  else {
-      $(function () {
-        var json_loc = "json/temp/"+response.tempfile;
-        $('.worldcat-stack').stackView({
-          url: json_loc,
-        });
-      });
-  }
+  // Grab organized MARC data
+  getMARC(search_type, query);
 
-}
-
-function Error (response){
-  console.log("this didn't work");
-  $('.worldcat-stack').html("Your search did not find any records.  Please try again.");
-  console.log(response);
-}
-
-// secondary call to grab organized MARC data
-
-$.ajax({
-  type: "POST",
-  url: "php/WSUCatalog.php",
-  data: {call:'<?php echo "second" ?>', search_type: '<?php if (isset($_GET['type'])) { $type = $_GET['type']; echo $type;} else { $type = 'lc'; echo $type;}?>', query: '<?php if (isset($_GET['q'])) { $q = $_GET['q']; echo $q;} else { $q = 'LD 5889 .W42 A73 2009'; echo $q;}?>'},  
-  dataType: "json",
-  success: Success2,
-  error: Error2
-});
-
-function Success2 (response2){
-
-  if (response2['stackviewRecords'].length == 0){
-      $('.worldcat-stack .nores').html("Your search did not find any records.  Please try again.");
-  }
-  else {
-  console.log("this worked!");
-  console.log(response2);
-
-  }
-
-}
-
-function Error2 (response){
-  console.log("this didn't work");
-  console.log(response);
-}
-
-
-
-// Individual book info call
-$('li.stack-item').click(function () {
-
-  $.ajax({
-    type: "POST",
-    url: "php/ebookChecker.php",
-    // li.stack-item.stack-book.highlight-book.css('zIndex');
-    data: {oclc: 276228966, isbn: 1872291317},  
-    dataType: "json",
-    success: Success,
-    error: Error
-  });
-
-  function Success (click_response){
-    console.log("you clicked!");
-    console.log(click_response);
-
-
-  }
-
-  function Error (click_response){
-    console.log("this CLICK didn't work");
-    $('.worldcat-stack .nores').html("Your search did not find any records.  Please try again.");
-    console.log(click_response);
-  }
-
-
-
-
-});
 });
 </script>
+
+<!-- js just for this page -->
+<script type="text/javascript" src="http://balupton.github.com/jquery-syntaxhighlighter/scripts/jquery.syntaxhighlighter.min.js"></script>
+<script type="text/javascript">$.SyntaxHighlighter.init();</script>
 </body>
 </html>

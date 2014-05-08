@@ -167,20 +167,20 @@ function createMARCArray ($XMLArray, $query, $eventInfo) {
 
     $M2 = singFieldHandler($XMLArray, $countArray, $query);
     $M3['holdings_information'] = extractHoldingsInfo($XMLArray, $query);
-    $MARC['fullRecords'][$query] = array_merge((array)$M1, $M2, $M3);
+    $MARC['fullRecords'] = array_merge((array)$M1, $M2, $M3);
     // print_r($MARC);
 
 
-    ksort($MARC['fullRecords'][$query]);
+    ksort($MARC['fullRecords']);
     // give field names
-    foreach ($MARC['fullRecords'][$query] as $origKey => $value){
+    foreach ($MARC['fullRecords'] as $origKey => $value){
       if (isset($marc_field_names[$origKey])) {
         $newKey = $marc_field_names[$origKey];        
-        $MARC['fullRecords'][$query][$origKey]['field_name'] = $newKey;
+        $MARC['fullRecords'][$origKey]['field_name'] = $newKey;
       }
 
       else {
-        $MARC['fullRecords'][$query][$origKey]['field_name'] = "None";
+        $MARC['fullRecords'][$origKey]['field_name'] = "None";
       }
 
     }
@@ -273,25 +273,32 @@ function extractHoldingsInfo($XMLArray, $query) {
 
 function svRecordCreator($MARC, $query, $eventInfo) {
     // Now go make your list of results for Stack View
-    $MARC['stackviewRecords']['title'] = $MARC['fullRecords'][$query]['field_245'][0];
+    $MARC['stackviewRecords']['title'] = $MARC['fullRecords']['field_245'][0];
 
-    if (isset($MARC['fullRecords'][$query]['field_100'][0]) == FALSE){$MARC['stackviewRecords']['creator'] = " ";}
-    else {$MARC['stackviewRecords']['creator'] = $MARC['fullRecords'][$query]['field_100'][0];}
+    if (isset($MARC['fullRecords']['field_100'][0]) == FALSE){$MARC['stackviewRecords']['creator'] = " ";}
+    else {$MARC['stackviewRecords']['creator'] = $MARC['fullRecords']['field_100'][0];}
 
-    if (isset($MARC['fullRecords'][$query]['field_300']['split'][0]) == FALSE){$MARC['fullRecords'][$query]['field_300']['split'][0] = " ";}
-    else {$page_num = trim(preg_replace('*[^0-9 ]*', '', $MARC['fullRecords'][$query]['field_300']['split'][0]));
+    if (isset($MARC['fullRecords']['field_300']['split'][0]) == FALSE){$MARC['fullRecords']['field_300']['split'][0] = " ";}
+    else {$page_num = trim(preg_replace('*[^0-9 ]*', '', $MARC['fullRecords']['field_300']['split'][0]));
     $MARC['stackviewRecords']["measurement_page_numeric"] = intval($page_num);}
     
-    $height_cm = trim(preg_replace('*[^\s]+[^0-9]*', '', trim(preg_replace('*[^0-9 ]*', '', end($MARC['fullRecords'][$query]['field_300']['split'])))));
+    $height_cm = trim(preg_replace('*[^\s]+[^0-9]*', '', trim(preg_replace('*[^0-9 ]*', '', end($MARC['fullRecords']['field_300']['split'])))));
     $MARC['stackviewRecords']["measurement_height_numeric"] = intval($height_cm);
 
-    $date = trim(preg_replace('*[^0-9 ]*', '', end($MARC['fullRecords'][$query]['field_260']['split'])));
+    $date = trim(preg_replace('*[^0-9 ]*', '', end($MARC['fullRecords']['field_260']['split'])));
     $MARC['stackviewRecords']['pub_date'] = intval($date);
 
     //Adding in shelfrank manually until each record shows usage stats
     $MARC['stackviewRecords']["shelfrank"] = 40;
-    if (isset($MARC['fullRecords'][$query]['field_035'][0])) {
-        $MARC['fullRecords']["link"] = recordLocator(preg_replace('*[^0-9]*', '', $MARC['fullRecords'][$query]['field_035'][0]));
+    if (isset($MARC['fullRecords']['field_035'][0])) {
+        foreach ($MARC['fullRecords']['field_035'] as $key => $value){
+            if (substr($MARC['fullRecords']['field_035'][$key], 0, 5) == "(OCoL") {
+                $MARC['fullRecords']["link"] = recordLocator(preg_replace('*[^0-9]*', '', $MARC['fullRecords']['field_035'][$key]));
+             }
+             else {
+                continue;
+             }
+        }
         $MARC['stackviewRecords']["link"] = '#';
         //Reorder array to make link come last; stackview is very particular about its order
         $v = $MARC['stackviewRecords']["link"];
