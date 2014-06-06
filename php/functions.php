@@ -6,7 +6,7 @@
 function changeToLC($searchType,$query) {
 // if needed, this function retrieves the necessary lc call number from the xmlserver in order to begin its Z3950 work
 include 'settings.php';
-$eventInfo['xmlURL']="http://elibrary.wayne.edu:/xmlopac/$searchType$query/1/1/1/1?link=i1-2&nodtd=y&noexclude=WXROOT.Heading.Title.IIIRECORD";
+$eventInfo['xmlURL']="http://$eventInfo[xmlServer]/$searchType$query/1/1/1/1?link=i1-2&nodtd=y&noexclude=WXROOT.Heading.Title.IIIRECORD";
   $xml = simplexml_load_file($eventInfo['xmlURL']);
   foreach($eventInfo['marcfields'] as $marcfield) {
     $marcfieldcheck = count($xml->xpath("//VARFLD/MARCINFO[MARCTAG='$marcfield']"));
@@ -28,15 +28,15 @@ $eventInfo['xmlURL']="http://elibrary.wayne.edu:/xmlopac/$searchType$query/1/1/1
 ////////////////////////////////////////////////////////////////
 // BEGIN Z3950
 ////////////////////////////////////////////////////////////////
-function Z3950Router($yazCall,$query) {
+function Z3950Router($yazCall,$query, $call) {
 // this function either retrieves a range of lc call numbers or searches for the MARC records associated with a range of lc call numbers
 include 'settings.php';
     if ($yazCall == "yaz_scan") {
-        $eventInfo['LCCallNums'] = Z3950Call($yazCall,$query);
+        $eventInfo['LCCallNums'] = Z3950Call($yazCall,$query, $call);
         return $eventInfo['LCCallNums'];       
     }
     elseif ($yazCall == "yaz_search") {
-     $eventInfo['Z3950Results'] = Z3950Call($yazCall,$query);
+     $eventInfo['Z3950Results'] = Z3950Call($yazCall,$query, $call);
      return $eventInfo['Z3950Results'];
 }
 }
@@ -44,7 +44,7 @@ include 'settings.php';
 ////////////////////////////////////////////////////////////////
 // Z3950 processing
 ////////////////////////////////////////////////////////////////
-function Z3950Call($yazCall,$query) {
+function Z3950Call($yazCall,$query, $call) {
 // this function runs the initial Z3950 call framework and the more specific type of call needed (scan versus search)
 // include 'recordLocator.php';
     include 'settings.php';
@@ -66,7 +66,7 @@ function Z3950Call($yazCall,$query) {
 
     // SPECIFY and RUN specific type of Z3950 query
     if ($yazCall == "yaz_scan") {
-        $eventInfo['LCCallNums'] = $eventInfo['range'] = yazScan($yazCall, $session, $search, $query);
+        $eventInfo['LCCallNums'] = $eventInfo['range'] = yazScan($yazCall, $session, $search, $query, $call);
         return $eventInfo['LCCallNums'];
     }
 
@@ -80,9 +80,16 @@ function Z3950Call($yazCall,$query) {
 ////////////////////////////////////////////////////////////////
 // SCAN for LC Call Numbers (if invoked)
 ////////////////////////////////////////////////////////////////
-function yazScan ($yazCall, $session, $search, $query) {
+function yazScan ($yazCall, $session, $search, $query, $call) {
     include 'settings.php';
-    $yazCall($session, "rpn", $search, $eventInfo['range']);
+    if ($call == "extend") {
+        // $eventInfo['fullRecords'][30] = $call;
+        $yazCall($session, "rpn", $search, $eventInfo['extendShelf']);
+        // $eventInfo['extendShelf'] = $call;
+    }
+    else {
+        $yazCall($session, "rpn", $search, $eventInfo['range']);
+    }
     // wait blocks until the query is done
     yaz_wait();
     
@@ -337,49 +344,11 @@ function viewingOptions($oclc, $isbn) {
 }
 
 function googleSearch ($oclc, $isbn) {
+    include 'settings.php';
     // get Google book status
-    // if isbn is there, look for the types of formats we can offer it in
-    // if (!empty($isbn)) {
-    //     $google = file_get_contents("https://www.googleapis.com/books/v1/volumes?q=isbn:".$isbn);
-    //     // parse Google book status - json
-    //     $googleData = array();
-    //     $rawData = json_decode($google, true);
-    //     if ($rawData['totalItems'] == 0) {
-    //         $googleData['Google']['provider'] = "Google Books";
-    //         $googleData['Google']["access"] = "no access";
-    //     }
-
-    //     else {
-    //             foreach ($rawData as $key) {
-    //                  if ($rawData['items']['accessInfo']['country'] == "US") {
-    //                         $googleData['Google']['provider'] = "Google Books";
-    //                         switch($rawData['items']['accessInfo']['viewability']) {
-    //                             case 'PARTIAL':
-    //                                 $access = "partial access";
-    //                             break;
-
-    //                             case 'ALL_PAGES':
-    //                                 $access = "full access";
-    //                             break;
-
-    //                             case 'NO_PAGES':
-    //                                 $access = "no access";
-    //                             break;
-
-    //                             case 'UNKNOWN':
-    //                                 $access = "no access";
-    //                             break;
-    //                         }
-    //                         $googleData['Google']['access'] = $access;
-    //                         $googleData['Google']['link'] = $rawData['items']['access']['webReaderLink'];
-    //                     } //ends if
-    //             } //ends foreach
-    //     } //ends else
-
-    // } //ends isbn if
-
-    // else { //if isbn isn't there
-
+    // if isbn isn't there, look for the types of formats we can offer it in
+    if ($isbn===NULL) 
+    {
         // Google Book Status
         $google = file_get_contents("https://www.googleapis.com/books/v1/volumes?q=oclc:".$oclc);
         // parse Google book status - json
@@ -416,8 +385,52 @@ function googleSearch ($oclc, $isbn) {
                 } //ends if
         } //ends foreach
         } //ends else
+    } //ends isbn if
 
-    // } //ends else
+    else { //if isbn is't there
+
+        $google = file_get_contents("https://www.googleapis.com/books/v1/volumes?q=isbn:".$isbn."&key=".$eventInfo['GoogleBooksKey']);
+        // parse Google book status - json
+        $googleData = array();
+        $rawData = json_decode($google, true);
+        if ($rawData['totalItems'] == 0) {
+            $googleData['Google']['provider'] = "Google Books";
+            $googleData['Google']["access"] = "no access";
+        }
+
+        else {
+                foreach ($rawData as $key) {
+                    if ($rawData['items'][0]['searchInfo']['textSnippet'] == "Never Highlight a Book Again! Just the FACTS101 study guides give the student the textbook outlines, highlights, practice quizzes and optional access to the full practice tests for their textbook.") {
+                        $googleData['Google']['provider'] = "Google Books";
+                        $googleData['Google']["access"] = "no access";
+                        return $googleData;                        
+                    }
+                     elseif ($rawData['items'][0]['accessInfo']['country'] == "US") {
+                            $googleData['Google']['provider'] = "Google Books";
+                            switch($rawData['items'][0]['accessInfo']['viewability']) {
+                                case 'PARTIAL':
+                                    $access = "partial access";
+                                break;
+
+                                case 'ALL_PAGES':
+                                    $access = "full access";
+                                break;
+
+                                case 'NO_PAGES':
+                                    $access = "no access";
+                                break;
+
+                                case 'UNKNOWN':
+                                    $access = "no access";
+                                break;
+                            }
+                            $googleData['Google']['access'] = $access;
+                            $googleData['Google']['link'] = $rawData['items'][0]['accessInfo']['webReaderLink'];
+                        } //ends if
+                } //ends foreach
+        } //ends else
+
+    } //ends else
 
     return $googleData;
 
@@ -427,18 +440,18 @@ function fedoraSearch ($oclc) {
     // get Fedora status
     $fedoraData = array();
     $q = "mods_identifier_oclc_ms:".$oclc;
-    $CollectionListParams = array(
-    "rows" => 100,
-    "start" => 0,
-    "fl" => "",
-    "q" => $q,
-    "wt" => "json",
-    "raw" => "escapeterms"
+    $CollectionListParams = http_build_query( 
+        array(
+            "solrParams" =>'',
+            "rows" => 100,
+            "start" => 0,
+            "q" => $q,
+            "wt" => "json"
+        )
     );
 
-    $CollectionListParams = json_encode($CollectionListParams);
-    $URL = "http://silo.lib.wayne.edu/WSUAPI/?functions[]=solrSearch&solrParams=".$CollectionListParams;
-    $APIcallURL = file_get_contents("http://silo.lib.wayne.edu/WSUAPI/?functions[]=solrSearch&solrParams=".$CollectionListParams);
+    $URL = "http://silo.lib.wayne.edu/WSUAPI/?functions[]=solrSearch&" . $CollectionListParams;
+    $APIcallURL = file_get_contents($URL);
         // parse Fedora status
     $rawData = json_decode($APIcallURL, true);
         foreach($rawData as $key) {
@@ -449,7 +462,7 @@ function fedoraSearch ($oclc) {
 
             else {
             $fedoraData['Fedora']['provider'] = "Wayne State Digital Object Repository";
-            $fedoraData['Fedora']['link'] = "http://silo.lib.wayne.edu/eTextReader/eTextReader.php?ItemID=".$rawData['solrSearch']['response']['docs'][0]['id']."#page/1/mode/2up";
+            $fedoraData['Fedora']['link'] = "http://digital.library.wayne.edu/eTextReader/eTextReader.php?ItemID=".$rawData['solrSearch']['response']['docs'][0]['id']."#page/1/mode/2up";
             $fedoraData['Fedora']['access'] = "full access";
             }
         }

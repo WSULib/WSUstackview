@@ -4,6 +4,7 @@ $eventInfo_allData = array();
 // Server URL with port and database descriptor
 $eventInfo['LCNumber'] = '';
 $eventInfo['server'] = "elibrary.wayne.edu:210/innopac";
+$eventInfo['xmlServer'] = "elibrary.wayne.edu/xmlopac";
 $eventInfo['syntax'] = "usmarc";
 $eventInfo['count'] = '';
 $eventInfo['stackviewRecords'] = array();
@@ -11,6 +12,11 @@ $eventInfo['marcfields'] = array('996','050','090');
 $eventInfo['range'] = array(
         "number" => 30,
         "position" => 15,
+        "stepSize" => 0
+    );
+$eventInfo['extendShelf'] = array(
+        "number" => 30,
+        "position" => 0,
         "stepSize" => 0
     );
 // $eventInfo['range'] = array(
@@ -26,7 +32,7 @@ $eventInfo['server_loc'] = "elibrary.wayne.edu";
 // for example, maybe a title search or an LC number search for the resource
 // Currently this alternateLink is prepended to LC Call Number to make an LC search; some reworking might be needed if you want a different type of search
 $eventInfo['alternateLink'] = "http://"."$eventInfo[server_loc]"."/search~/?searchtype=c&searcharg=";
-
+$eventInfo['GoogleBooksKey'] = "AIzaSyDUPa7_BXW-ZRaHrtRYv9wDdUU4p-vSsC4";
 
 
 

@@ -54,9 +54,13 @@ if ($call == "first") {
 elseif ($call == "second") {
   require_once('functions_process.php');
 }
+else {
+  // unset($eventInfo);
+  require_once('functions.php');
+}
+$eventInfo['call'] = $call;
 require_once('settings.php');
 require_once('marc_field_names.php');
-
 
 $query = $_POST['query'];
 $type = $_POST['search_type'];
@@ -83,7 +87,7 @@ if (strpos($query, ' ') !== false)
 if ($type == 'oclc') {
     $searchType = 'o';
     $eventInfo['LCNumber'] = changeToLC($searchType,$query);
-    $eventInfo['LCCallNums'] = Z3950Router("yaz_scan",$eventInfo['LCNumber']);
+    $eventInfo['LCCallNums'] = Z3950Router("yaz_scan",$eventInfo['LCNumber'], $call);
     foreach($eventInfo['LCCallNums'] as $query){
     $eventInfo['Z3950Results'] = Z3950Router("yaz_search",$query);
     array_push($eventInfo['stackviewRecords'], $eventInfo['Z3950Results']['stackviewRecords']);  
@@ -92,7 +96,10 @@ if ($type == 'oclc') {
 
 elseif ($type == 'lc') {
     $eventInfo['LCNumber'] = $query;
-    $eventInfo['LCCallNums'] = Z3950Router("yaz_scan",$eventInfo['LCNumber']);
+      // unset($eventInfo['LCCallNums']); //remove any existing data
+    $eventInfo['LCCallNums'] = Z3950Router("yaz_scan",$eventInfo['LCNumber'], $call);
+      // unset($eventInfo['fullRecords']); //remove any existing data here
+      // unset($eventInfo['Z3950Results']);
     $eventInfo['fullRecords'] = array();
     foreach($eventInfo['LCCallNums'] as $query){
     $eventInfo['Z3950Results'] = Z3950Router("yaz_search",$query);
@@ -104,7 +111,7 @@ elseif ($type == 'lc') {
 elseif ($type == 'title') {
     $searchType = 'x';
     $eventInfo['LCNumber'] = changeToLC($searchType,$query);
-    $eventInfo['LCCallNums'] = Z3950Router("yaz_scan",$eventInfo['LCNumber']);
+    $eventInfo['LCCallNums'] = Z3950Router("yaz_scan",$eventInfo['LCNumber'], $call);
     foreach($eventInfo['LCCallNums'] as $query){
     $eventInfo['Z3950Results'] = Z3950Router("yaz_search",$query);
     array_push($eventInfo['stackviewRecords'], $eventInfo['Z3950Results']['stackviewRecords']); 

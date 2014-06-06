@@ -319,201 +319,37 @@ function svRecordCreator($MARC, $query, $eventInfo) {
 // OTHER UTILITIES
 ////////////////////////////////////////////////////////////////
 
-// CLEANS up temp json file inside /json/temp folder
-function cleaner(){
-// Define the folder to clean
-// (keep trailing slashes)
-$folder = '../json/temp/';
+// // CLEANS up temp json file inside /json/temp folder
+// function cleaner(){
+// // Define the folder to clean
+// // (keep trailing slashes)
+// $folder = '../json/temp/';
  
-// Files to check
-$files = '*.json';
+// // Files to check
+// $files = '*.json';
  
-// minutes before files are up for deletion
-$expireTime = 1; 
+// // minutes before files are up for deletion
+// $expireTime = 1; 
  
-// Find all files of the given file type
-foreach (glob($folder . $files) as $fileName) {
+// // Find all files of the given file type
+// foreach (glob($folder . $files) as $fileName) {
  
-    // Read file creation time
-    $fileCreationTime = filectime($fileName);
+//     // Read file creation time
+//     $fileCreationTime = filectime($fileName);
  
-    // Calculate file age in seconds
-    $fileAge = time() - $fileCreationTime; 
+//     // Calculate file age in seconds
+//     $fileAge = time() - $fileCreationTime; 
  
-    // Is file older than 1 minute?
-    if ($fileAge > ($expireTime * 60)){
-        unlink($fileName);
-    }
-}
-}
+//     // Is file older than 1 minute?
+//     if ($fileAge > ($expireTime * 60)){
+//         unlink($fileName);
+//     }
+// }
+// }
 
 ////////////////////////////////////////////////////////////////
 // ON-CLICK FUNCTIONS
 ////////////////////////////////////////////////////////////////
-
-// CHECKS E-BOOK AVAILABILITY
-function viewingOptions($oclc, $isbn) {
-
-    $googleData = googleSearch($oclc, $isbn);
-    $fedoraData = fedoraSearch($oclc);
-    $openlibraryData = openLibrarySearch($isbn);
-
-    ///////////////////////
-    // Future updates
-    //////////////////////
-    // 1. get elibrary subscription status
-    // 2. Check HathiTrust
-
-
-    //transform into an array (which will include viewProviderName, accessAmount/full or limited, link)
-    $viewingOptions = array();
-    $viewingOptions = array_merge($fedoraData, $googleData, $openlibraryData);
-    return $viewingOptions;
-}
-
-function googleSearch ($oclc, $isbn) {
-    // get Google book status
-    // if isbn is there, look for the types of formats we can offer it in
-    // if (!empty($isbn)) {
-    //     $google = file_get_contents("https://www.googleapis.com/books/v1/volumes?q=isbn:".$isbn);
-    //     // parse Google book status - json
-    //     $googleData = array();
-    //     $rawData = json_decode($google, true);
-    //     if ($rawData['totalItems'] == 0) {
-    //         $googleData['Google']['provider'] = "Google Books";
-    //         $googleData['Google']["access"] = "no access";
-    //     }
-
-    //     else {
-    //             foreach ($rawData as $key) {
-    //                  if ($rawData['items']['accessInfo']['country'] == "US") {
-    //                         $googleData['Google']['provider'] = "Google Books";
-    //                         switch($rawData['items']['accessInfo']['viewability']) {
-    //                             case PARTIAL:
-    //                                 $access = "partial access";
-    //                             break;
-
-    //                             case ALL_PAGES:
-    //                                 $access = "full access";
-    //                             break;
-
-    //                             case NO_PAGES:
-    //                                 $access = "no access";
-    //                             break;
-
-    //                             case UNKNOWN:
-    //                                 $access = "no access";
-    //                             break;
-    //                         }
-    //                         $googleData['Google']['access'] = $access;
-    //                         $googleData['Google']['link'] = $rawData['items']['access']['webReaderLink'];
-    //                     } //ends if
-    //             } //ends foreach
-    //     } //ends else
-
-    // } //ends isbn if
-
-    // else { //if isbn isn't there
-
-        // Google Book Status
-        $google = file_get_contents("https://www.googleapis.com/books/v1/volumes?q=oclc:".$oclc);
-        // parse Google book status - json
-        $googleData = array();
-        $rawData = json_decode($google, true);
-        if ($rawData['totalItems'] == 0) {
-            $googleData['Google']['provider'] = "Google Books";
-            $googleData['Google']["access"] = "no access";
-        }
-
-        else {
-        foreach ($rawData as $key) {
-             if ($rawData['items'][0]['accessInfo']['country'] == "US") {
-                    $googleData['Google']['provider'] = "Google Books";
-                        switch($rawData['items'][0]['accessInfo']['viewability']) {
-                            case PARTIAL:
-                                $access = "partial access";
-                                break;
-
-                            case ALL_PAGES:
-                                $access = "full access";
-                                break;
-
-                            case NO_PAGES:
-                                $access = "no access";
-                                break;
-
-                            case UNKNOWN:
-                                $access = "no access";
-                                break;
-                        }
-                    $googleData['Google']['access'] = $access;                    
-                    $googleData['Google']['link'] = $rawData['items'][0]['accessInfo']['webReaderLink'];
-                } //ends if
-        } //ends foreach
-        } //ends else
-
-    // } //ends else
-
-    return $googleData;
-
-}
-
-function fedoraSearch ($oclc) {
-    // get Fedora status
-    $fedoraData = array();
-    $q = "mods_identifier_oclc_ms:".$oclc;
-    $CollectionListParams = array(
-    "rows" => 100,
-    "start" => 0,
-    "fl" => "",
-    "q" => $q,
-    "wt" => "json",
-    "raw" => "escapeterms"
-    );
-
-    $CollectionListParams = json_encode($CollectionListParams);
-    $URL = "http://silo.lib.wayne.edu/WSUAPI/?functions[]=solrSearch&solrParams=".$CollectionListParams;
-    $APIcallURL = file_get_contents("http://silo.lib.wayne.edu/WSUAPI/?functions[]=solrSearch&solrParams=".$CollectionListParams);
-        // parse Fedora status
-    $rawData = json_decode($CollectionListParams, true);
-        foreach($rawData as $key) {
-            if ($rawData['rows'] == 0 ) {
-            $fedoraData['Fedora']['provider'] = "Wayne State Digital Object Repository";
-            $fedoraData['Fedora']['link'] = $URL;
-            $fedoraData['Fedora']['access'] = "no access";
-            }
-
-            else {
-            $fedoraData['Fedora']['provider'] = "Wayne State Digital Object Repository";
-            $fedoraData['Fedora']['link'] = "http://silo.lib.wayne.edu/eTextReader/eTextReader.php?ItemID=".$rawData['response']['docs'][0]['id']."#page/1/mode/2up";
-            $fedoraData['Fedora']['access'] = "full access";
-            }
-        }
-        return $fedoraData;
-
-}
-
-function openlibrarySearch ($isbn) {
-    // get openlibrary status
-    $openlibrary = file_get_contents("http://openlibrary.org/api/volumes/brief/isbn/".$isbn.".json");
-        // parse openlibrary status - json
-        $openlibraryData = array();
-        $rawData = json_decode($openlibrary);
-        if ($rawData == null) {
-        $openlibraryData['openlibrary']['provider'] = "Open Library";
-        $openlibraryData['openlibrary']['access'] = "no access";
-        }
-
-        else {
-            foreach ($rawData as $key) {
-            $openlibraryData['openlibrary']['provider'] = "Open Library";
-            $openlibraryData['openlibrary']['link'] = $rawData['records']['items'][0]['itemURL'];
-            $openlibraryData['openlibrary']['access'] = $rawData['records']['items'][0]['status'];
-            }
-        }
-    return $openlibraryData;
-
-}
 
 // CHECKS BOOK STATUS IN CATALOG
 function bookStatus () {

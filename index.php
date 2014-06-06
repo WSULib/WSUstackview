@@ -46,37 +46,109 @@ $(document).ajaxComplete(function()
 		    }
 		  });
 
+    $("li.stack-item").click(function() {
+            var currentTitle = $(this).text();
+            $('.current-item .title').empty(currentTitle).append(currentTitle);
+            var num = 29 - parseInt($(this).css('zIndex'));
+            $('.current-item .record').empty().append("<a href="+obj2.fullRecords[num].link+" target='_blank'>View Catalog Record</a>");
+            checkEbookStatus(obj2, num);
+              $(this).unbind();
+    });
+
+// ************* AXA NOTE ****************
+// the .last() and .first() right below are what need to be replaced with whatever arrow, etc awesomeness you come up with
+// ***************************************
+    $('li.stack-item').last().click(function(){
+          var num = 29 - parseInt($(this).css('zIndex'));
+          var query = obj2.LCCallNums[num];
+          var search_type = 'lc';
+
+          nextRecords(search_type, query, "last"); //This is still a bit broken
+          $('.highlight-book').removeClass().addClass('stack-item stack-book heat5');
+          $(this).unbind();
+        });
+
+    $('li.stack-item').first().click(function(){
+          var num = 29 - parseInt($(this).css('zIndex'));
+          var query = obj2.LCCallNums[num];
+          var search_type = 'lc';
+
+// ************* AXA NOTE ****************
+// Not quite sure if the right book is getting highlighted golden..
+// ***************************************
+
+
+          nextRecords(search_type, query, "first"); // This is kinda wonky as well.  I'll fix it soon.
+          $('.highlight-book').removeClass().addClass('stack-item stack-book heat5');
+          $(this).unbind();
+        });
+
+
+      // Tooltip
       $('li.stack-item').hover(function(){
               // Hover over code
+              var availability = $(".status").text();
+              var location = $(".location").text();
               var title = $(this).attr('title');
+
+              if (availability == "Available") {
+                $(".tooldeets").css("border-left-color", "#069E87");
+                $(".tooldeets").css("color", "#069E87");
+              }
+              else {
+                $(".tooldeets").css("border-left-color", "#B08328");
+                $(".tooldeets").css("color", "#B08328");
+              }
+
+            var num = 29 - parseInt($(this).css('zIndex'));
               $(this).data('tipText', title).removeAttr('title');
-              $('<p class="tooltip"></p>').text(title).appendTo('body').fadeIn();
+              $('<p class="tooltip"></p>').html(title+"<br><span class='tooldeets'><span class='callnum'>"+obj2.LCCallNums[num]+"</span><br><span class='availability'>"+availability+"</span> @ <span class='locationtool'>"+location+"</span></span>").appendTo('body').fadeIn();
       }, function() {
               // Hover out code
               $(this).attr('title', $(this).data('tipText'));
               $('.tooltip').remove();
       }).mousemove(function(e) {
-              var mousex = e.pageX + 20; //Get X coordinates
-              var mousey = e.pageY + 10; //Get Y coordinates
+              var mousex = e.pageX + 0; //Get X coordinates
+              var mousey = e.pageY + 0; //Get Y coordinates
               $('.tooltip')
               .css({ top: mousey, left: mousex })
       });
 
-    //       $("li.stack-item").unbind();
-    // $("li.stack-item").bind();
-    $("li.stack-item").click(function() {
-            var currentTitle = $(this).text();
-            $('.current-item .title').empty(currentTitle).append(currentTitle);
-            var num = 29 - parseInt($(this).css('zIndex'));
-            $('.current-item .callno').empty().append("Call No: "+obj2.LCCallNums[num])
-            $('.current-item .record').empty().append("<a href="+obj2.fullRecords[num].link+" target='_blank'>Catalog Record</a>");
-            holdingsANDStatus(obj2, num);
-            checkEbookStatus(obj2, num);
-
-    });
-
 });
 </script>
+
+<style>
+  .callno, .callnum {
+    text-transform: uppercase;
+    font-weight: 900;
+  }
+
+  .title {
+    margin-bottom: 1em;
+    display: inline-block;
+    font-size: 0.875em;
+  }
+
+  .callno, .status, .record, .location, .ebook {
+    font-size: 0.75em;
+  }
+
+  .available {
+    border-left: solid 5px green;
+    padding: 0 1em;
+  }
+
+  .current-item span a {
+    background: #666;
+    color: #fff;
+    margin-right: 16px;
+    padding: 6px 10px;
+    border-radius: 3px;
+  }
+  .current-item {
+    top: -25px;
+  }
+</style>
 </head>
 
 <body>
@@ -84,11 +156,11 @@ $(document).ajaxComplete(function()
   <h2>A book visualization and browsing tool—a virtual shelf</h2>
 
   <div class="current-item">
-    <div class="title"></div>
-    <span class="callno"></span>
-    <span class="status"></span>
+    <span class="title"></span><br>
+    <!-- <span class="callno"></span> -->
     <span class="record"></span>
-    <span class="location"></span>
+    <span class="location" style="display:none;"></span>
+    <span class="status" style="display:none;"></span>
     <span class="ebook"></span>
   </div>
 	
@@ -129,7 +201,7 @@ $(document).ready(function() {
 </script>
 
 <!-- js just for this page -->
-<script type="text/javascript" src="http://balupton.github.com/jquery-syntaxhighlighter/scripts/jquery.syntaxhighlighter.min.js"></script>
-<script type="text/javascript">$.SyntaxHighlighter.init();</script>
+<!-- <script type="text/javascript" src="http://balupton.github.com/jquery-syntaxhighlighter/scripts/jquery.syntaxhighlighter.min.js"></script> 
+<script type="text/javascript">$.SyntaxHighlighter.init();</script>-->
 </body>
 </html>

@@ -1,22 +1,33 @@
+// global variables
+var obj = '';
+var obj2 = '';
+var obj3 = '';
+var obj4 = '';
+var json = '';
+var stack = '';
+// var json_loc = '';
+
 // First get stackview records
 function populateStackview(search_type, query) {
-	$.ajax({
+	return $.ajax({
 		type: "POST",
 		url: "php/WSUCatalog.php",
-		data: {call:"first", search_type: search_type, query: query},  
+		data: {call:"first", search_type: search_type, query: query},
 		dataType: "json"
 	})
 
 .done(function (response) {
 
-  if (response['stackviewRecords'].length == 0){
+  if (response['stackviewRecords'].length === 0) {
       $('.worldcat-stack .nores').html("Your search did not find any records.  Please try again.");
   }
   else {
-      $(function () {
+  	console.log('this should be stackview records only');
+  	console.log(response);
+  	obj = response;
         var json_loc = "json/temp/"+response.tempfile;
-        $('.worldcat-stack').stackView({ url: json_loc,});
-      })
+        stack = new StackView('.worldcat-stack', {url: json_loc});
+
   }
 
 })
@@ -25,7 +36,7 @@ function populateStackview(search_type, query) {
 
   console.log("this didn't work");
   $('.worldcat-stack').html("Your search did not find any records.  Please try again.");
-  console.log(response);	
+  console.log(response);
 	});
 
 }
@@ -35,13 +46,14 @@ function getMARC(search_type, query) {
 	$.ajax({
 		type: "POST",
 		url: "php/WSUCatalog.php",
-		data: {call:"second", search_type: search_type, query: query},  
+		data: {call:"second", search_type: search_type, query: query},
+		global: false,
 		dataType: "json"
 	})
 
 	.done(function (response2){
 
-		if (response2['stackviewRecords'].length == 0){
+		if (response2['stackviewRecords'].length === 0){
 			$('.worldcat-stack .nores').html("Your search did not find any records.  Please try again.");
 		}
 		else {
@@ -55,15 +67,15 @@ function getMARC(search_type, query) {
 	.fail(function (response2){
 
 		console.log("this didn't work");
-		console.log(response);
+		console.log(response2);
 	});
 
 }
 
-// Now display data for the initially selected book (Note: functions below also run when triggered through onclick events found on index.php)
+// Now display data for the initially selected book (Note: functions below it also run when triggered through onclick events found on index.php)
 function displayFirstBook(obj2){
 	$('span.callno').empty().append("Call No: "+obj2.LCCallNums[14]);
-	$('span.record').empty().append("<a href="+obj2.fullRecords[14].link+" target='_blank'>Catalog Record</a>");
+	$('span.record').empty().append("<a href="+obj2.fullRecords[14].link+" target='_blank'>View Catalog Record</a>");
 	holdingsANDStatus(obj2, 14);
 	checkEbookStatus(obj2, 14);
 }
@@ -71,61 +83,82 @@ function displayFirstBook(obj2){
 function holdingsANDStatus(obj2, num){
 	$('span.status').empty();
 	$('span.location').empty();
+	var holdings_obj = obj2.fullRecords[num].holdings_information;
+
 	if( typeof obj2.fullRecords[num].holdings_information[0] !== 'undefined' ){
 		// if there are multiple holdings
+		holdings_obj.note = "multiple holdings";
+		var available = '';
 		for (var key in obj2.fullRecords[num].holdings_information) {
-			var holdings_obj = obj2.fullRecords[num].holdings_information;
-				if (holdings_obj.hasOwnProperty(key) && key !== "field_name"){
-					$('span.status').append(holdings_obj[key].publicNote);
-					$('span.location').append("Location: "+holdings_obj[key].localLocation);
+			if (available === true) {
+				console.log("something is checked in");
+				break;
+			}
+			if (holdings_obj.hasOwnProperty(key) && key !== "field_name" && holdings_obj[key].publicNote == "CHECKED IN"){
+
+				$('span.status').append("Available");
+				$('span.location').append("Location: "+holdings_obj[key].localLocation);
+				available = true;
 			}
 				else {
 					continue;
 				}
-		}
+			} //for
+			if ($('span.status').is(':empty') && $('span.location').is(':empty')) {
+				console.log('nothing was checked in');
+				$('span.status').append(holdings_obj[0].publicNote);
+				$('span.location').append("Location: "+holdings_obj[0].localLocation);
+			}
+		} //if
 
-	}
 	
 	else{
 		// if there is a single holding
-		$('span.status').append(obj2.fullRecords[num].holdings_information.publicNote);
-		$('span.location').append("Location: "+obj2.fullRecords[num].holdings_information.localLocation);
+		holdings_obj.note = "single holding";
+		if (holdings_obj.publicNote == "CHECKED IN") {
+			$('span.status').append("Available");
+			$('span.location').append("Location: "+holdings_obj.localLocation);
+		}
+		else {
+			$('span.status').append(holdings_obj.publicNote);
+			$('span.location').append("Location: "+holdings_obj.localLocation);
+		}
 	}
 
 }
 
 function checkEbookStatus(obj2, num){
-	// $('span.ebook').empty();
-	console.log('test');
+	var isbn_num = '';
+	var oclc_num = '';
+	$('span.ebook').empty();
 	var isbn_field = obj2.fullRecords[num].field_020;
 	var oclc_field = obj2.fullRecords[num].field_035;
+
 	if (typeof isbn_field !== 'undefined'){
 		var isbn_num = isbn_field[0].replace( /[^\d]/g, '' );
-		// console.log(isbn_num);
 	}
 	else {
 		var isbn_num = "";
 	}
 
 	if (typeof oclc_field !== 'undefined'){
-		for (var i; i <= oclc_field; i++) {
-			var isMatch = /^(OCoL/.test(oclc_field[i]);
+		for (var i in oclc_field) {
+			var isMatch = /^\(OCoL/.test(oclc_field[i]);
 			if (isMatch === true) {
 				var oclc_num = oclc_field[i].replace( /[^\d]/g, '' );
-				console.log(oclc_num);
 			}
 		}
 	}
 	else {
 		var oclc_num = "";
-	}	
-	// var isbn_num = 1872291317;
-	// var oclc_num = 276228966;
+	}
+
 	$.ajax({
 		type: "POST",
 		url: "php/ebookChecker.php",
 		// li.stack-item.stack-book.highlight-book.css('zIndex');
 		data: {oclc: oclc_num, isbn: isbn_num},
+		global: false,
 		dataType: "json"
 	})
 
@@ -169,6 +202,53 @@ function checkEbookStatus(obj2, num){
     $('.worldcat-stack .nores').html("Your search did not find any records.  Please try again.");
 	});
 
+}
+
+
+// Search for Next 30 records
+
+function nextRecords(search_type, query, place) {
+obj4 = '';
+	$.ajax({
+		type: "POST",
+		url: "php/WSUCatalog.php",
+		data: {call:"extend", search_type: search_type, query: query},
+		dataType: "json"
+	})
+
+.done(function (response4) {
+
+  if (response4['stackviewRecords'].length === 0){
+      $('.worldcat-stack .nores').html("Your search did not find any records.  Please try again.");
+  }
+  else {
+      $(function () {
+obj4 = response4;
+	if (place == "first") {
+		for (var i =0; i<obj4.stackviewRecords.length; i++) {
+			stack.add(1,obj4.stackviewRecords[i]);
+		}	
+	}
+	else {
+        // var json_loc = "json/temp/"+response4.tempfile;
+         for (var i =0; i<obj4.stackviewRecords.length; i++) {
+        	stack.add(obj4.stackviewRecords[i]);
+        }
+    }
+        // stack.add(json_loc);
+        console.log('it worked');
+      });
+  }
+
+})
+
+.fail(function (response4){
+
+  console.log("this didn't work");
+  $('.worldcat-stack').html("Your search did not find any records.  Please try again.");
+  console.log(response4);
+  });
+  $(this).unbind();
 }
 
 
