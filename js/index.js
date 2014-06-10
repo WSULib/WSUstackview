@@ -2,7 +2,6 @@
 var obj = '';
 var obj2 = '';
 var obj3 = '';
-var obj4 = '';
 var json = '';
 var stack = '';
 // var json_loc = '';
@@ -22,8 +21,8 @@ function populateStackview(search_type, query) {
       $('.worldcat-stack .nores').html("Your search did not find any records.  Please try again.");
   }
   else {
-  	console.log('this should be stackview records only');
-  	console.log(response);
+  	// console.log('this should be stackview records only');
+  	// console.log(response);
   	obj = response;
         var json_loc = "json/temp/"+response.tempfile;
         stack = new StackView('.worldcat-stack', {url: json_loc});
@@ -138,7 +137,8 @@ function checkEbookStatus(obj2, num){
 		var isbn_num = isbn_field[0].replace( /[^\d]/g, '' );
 	}
 	else {
-		var isbn_num = "";
+		// var isbn_num = "";
+		return;
 	}
 
 	if (typeof oclc_field !== 'undefined'){
@@ -150,7 +150,8 @@ function checkEbookStatus(obj2, num){
 		}
 	}
 	else {
-		var oclc_num = "";
+		return;
+		// var oclc_num = "";
 	}
 
 	$.ajax({
@@ -164,9 +165,13 @@ function checkEbookStatus(obj2, num){
 
   .done(function (response3){
     obj3 = response3;
-    console.log(response3);
+    // console.log(response3);
 	if (typeof obj3.Google.link !== 'undefined'){
 		$('span.ebook').append("<a href="+obj3.Google.link+" target='_blank'>Google</a>. ");
+	}
+	// need to fix this hack
+	else if (obj3.Google.link == "https://encrypted.google.com/books/reader?id=3l7_p6EuMYoC&hl=en&printsec=frontcover&source=gbs_api#v=onepage&q&f=false") {
+		delete obj3.Google.link;
 	}
 
 	else {
@@ -198,7 +203,6 @@ function checkEbookStatus(obj2, num){
 
   .fail(function (response){
 
-    console.log("this CLICK didn't work");
     $('.worldcat-stack .nores').html("Your search did not find any records.  Please try again.");
 	});
 
@@ -208,11 +212,18 @@ function checkEbookStatus(obj2, num){
 // Search for Next 30 records
 
 function nextRecords(search_type, query, place) {
-obj4 = '';
+	obj2 = null;
+	if (place == "first") {
+		var call = "extend-first";
+	}
+	else if (place == "last") {
+		var call = "extend-last";
+	}
+
 	$.ajax({
 		type: "POST",
 		url: "php/WSUCatalog.php",
-		data: {call:"extend", search_type: search_type, query: query},
+		data: {call:call, search_type: search_type, query: query},
 		dataType: "json"
 	})
 
@@ -223,20 +234,25 @@ obj4 = '';
   }
   else {
       $(function () {
-obj4 = response4;
+	obj2 = response4;
 	if (place == "first") {
-		for (var i =0; i<obj4.stackviewRecords.length; i++) {
-			stack.add(1,obj4.stackviewRecords[i]);
+        var num = obj2.stackviewRecords.length - 1;
+		for (var i = 1; i<=obj.stackviewRecords.length; i++) {
+			stack.remove(1);
+		}
+		for (var i = 0; i<obj2.stackviewRecords.length; i++) {
+			stack.add(0,obj2.stackviewRecords[num - i]);
 		}	
 	}
 	else {
-        // var json_loc = "json/temp/"+response4.tempfile;
-         for (var i =0; i<obj4.stackviewRecords.length; i++) {
-        	stack.add(obj4.stackviewRecords[i]);
+        var num = parseInt($('div.num-found span').html());
+		for (var i = 1; i <=obj.stackviewRecords.length; i++) {
+			stack.remove(1);
+		}
+        for (var i =0; i<obj2.stackviewRecords.length; i++) {
+         	stack.add(obj2.stackviewRecords[i]);
         }
     }
-        // stack.add(json_loc);
-        console.log('it worked');
       });
   }
 
@@ -244,11 +260,9 @@ obj4 = response4;
 
 .fail(function (response4){
 
-  console.log("this didn't work");
   $('.worldcat-stack').html("Your search did not find any records.  Please try again.");
   console.log(response4);
   });
-  $(this).unbind();
 }
 
 
