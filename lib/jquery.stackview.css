@@ -1255,3 +1255,7 @@ footer a {
   /*IE10+ */
   filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='rgba(255, 255, 255, 0.7)', endColorstr='#ffffff', GradientType='0' );
   /* IE6-9 */ }
+
+  .heatNaN {
+    display: none;
+  }
