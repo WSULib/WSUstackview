@@ -3,3 +3,4 @@ keys.php
 .DS_Store
 .sass-cache/
 .jshintrc
+*.json

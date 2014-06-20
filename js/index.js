@@ -253,6 +253,7 @@ function nextRecords(search_type, query, place) {
          	stack.add(obj2.stackviewRecords[i]);
         }
     }
+    stack.remove(0);
       });
   }
 

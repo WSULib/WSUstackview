@@ -507,9 +507,43 @@
   .stack-navigation.empty .num-found {
     visibility: hidden; }
 
+.stack-item a .next {
+  position: absolute;
+  bottom: 10px;
+  right: 20px;
+  color: #000;
+  background: #FFD969;
+  text-shadow: none;
+  font-weight: bold;
+  font-size: 13px;
+  padding: 2px;
+-webkit-transform: rotate(180deg);
+    -moz-transform: rotate(180deg);
+    -o-transform: rotate(180deg);
+    -ms-transform: rotate(180deg);
+    transform: rotate(180deg);}
+.stack-item a .prev {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  color: #000;
+  background: #FFD969;
+  text-shadow: none;
+  font-weight: bold;
+  font-size: 13px;
+  padding: 2px;
+   -webkit-transform: rotate(180deg);
+    -moz-transform: rotate(180deg);
+    -o-transform: rotate(180deg);
+    -ms-transform: rotate(180deg);
+    transform: rotate(180deg);}
+
 /* Types */
 .stack-book {
-  margin: 0 0 2px 0; }
+  margin: 0 0 2px 0;}
+  .stack-book:first-child, .stack-book:last-child {
+    min-height: 80px;
+  }
   .stack-book > a {
     border-width: 1px 2px;
     border-style: solid;
