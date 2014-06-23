@@ -51,7 +51,10 @@ $(document).ajaxComplete(function()
             $('li.stack-item').not($(this)).removeClass('highlight-book').addClass('heat5');
             $(this).removeClass('heat5').addClass('highlight-book');
             $('.current-item .title').empty(currentTitle).append(currentTitle);
-            var num = 29 - parseInt($(this).css('zIndex'));
+            console.log(parseInt($(this).css('zIndex')));
+            if (firstORlast == 'first') { var num = 30; } else { var num = 29; }
+            var num = num - parseInt($(this).css('zIndex'));
+            console.log(num);
             $('.current-item .record').empty().append("<a href="+obj2.fullRecords[num].link+" target='_blank'>View Catalog Record</a>");
             checkEbookStatus(obj2, num);
     });
@@ -67,25 +70,26 @@ $(document).ajaxComplete(function()
 // the .last() and .first() right below are what need to be replaced with whatever arrow, etc awesomeness you come up with
 // ***************************************
     $('li.stack-item').last().click(function(){
+          firstORlast = 'last';
           var num = 29 - parseInt($(this).css('zIndex'));
           var query = obj2.LCCallNums[num];
           var search_type = 'lc';
 
-          nextRecords(search_type, query, "last"); //This is still a bit broken
+          // Grab organized MARC data
+          getMARC(search_type, query);
+          nextRecords(search_type, query, "last");
           $('.highlight-book').removeClass().addClass('stack-item stack-book heat5');
         });
 
     $('li.stack-item').first().click(function(){
+          firstORlast = 'first';
           var num = 29 - parseInt($(this).css('zIndex'));
           var query = obj2.LCCallNums[num];
           var search_type = 'lc';
 
-// ************* AXA NOTE ****************
-// Not quite sure if the right book is getting highlighted golden..
-// ***************************************
-
-
-          nextRecords(search_type, query, "first"); // This is kinda wonky as well.  I'll fix it soon.
+          // Grab organized MARC data
+          getMARC(search_type, query);
+          nextRecords(search_type, query, "first");
           $('.highlight-book').removeClass().addClass('stack-item stack-book heat5');
         });
 

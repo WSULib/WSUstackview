@@ -4,6 +4,7 @@ var obj2 = '';
 var obj3 = '';
 var json = '';
 var stack = '';
+var firstORlast = '';
 // var json_loc = '';
 
 // First get stackview records
@@ -211,14 +212,8 @@ function checkEbookStatus(obj2, num){
 
 // Search for Next 30 records
 
-function nextRecords(search_type, query, place) {
+function nextRecords(search_type, query, call) {
 	obj2 = null;
-	if (place == "first") {
-		var call = "extend-first";
-	}
-	else if (place == "last") {
-		var call = "extend-last";
-	}
 
 	$.ajax({
 		type: "POST",
@@ -235,7 +230,7 @@ function nextRecords(search_type, query, place) {
   else {
       $(function () {
 	obj2 = response4;
-	if (place == "first") {
+	if (call == "first") {
         var num = obj2.stackviewRecords.length - 1;
 		for (var i = 1; i<=obj.stackviewRecords.length; i++) {
 			stack.remove(1);
