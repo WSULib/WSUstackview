@@ -74,7 +74,8 @@ $(document).ajaxComplete(function()
           var num = 29 - parseInt($(this).css('zIndex'));
           var query = obj2.LCCallNums[num];
           var search_type = 'lc';
-
+          var currentTitle = $(this).find('.spine-title').text();
+          $('.current-item .title').empty(currentTitle);
           // Grab organized MARC data
           getMARC(search_type, query);
           nextRecords(search_type, query, "last");
@@ -86,7 +87,8 @@ $(document).ajaxComplete(function()
           var num = 29 - parseInt($(this).css('zIndex'));
           var query = obj2.LCCallNums[num];
           var search_type = 'lc';
-
+          var currentTitle = $(this).find('.spine-title').text();
+          $('.current-item .title').empty(currentTitle);
           // Grab organized MARC data
           getMARC(search_type, query);
           nextRecords(search_type, query, "first");
