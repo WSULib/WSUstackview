@@ -1,4 +1,5 @@
 #Stack View
+(Note: This is Wayne State University Libraries' internal modification of Harvard's Stack View project.  Please see <a href="https://github.com/WSULib/SVCatConnector">SVCatConnector</a> if you wish to hook up your own catalog with our Z3950 Connector and display.)
 
 The jQuery virtual stack plugin
 
