@@ -25,10 +25,10 @@
 
 <!-- stackview.css to style the stack -->
 <link rel="stylesheet" href="lib/jquery.stackview.css" type="text/css" />
-<link href='http://fonts.googleapis.com/css?family=Abril+Fatface|Open+Sans:300' rel='stylesheet' type='text/css'>
+<link href='https://fonts.googleapis.com/css?family=Abril+Fatface|Open+Sans:300' rel='stylesheet' type='text/css'>
 
 <!-- stackview.js and all js dependencies -->
-<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script>
 <script type="text/javascript" src="lib/jquery.stackview.min.js"></script>
 <script type="text/javascript" src="js/index.js"></script>
 
@@ -64,11 +64,6 @@ $(document).ajaxComplete(function()
     $('li.stack-item a').last().prepend("<span class='next'>&#8593; click for next stack &#8593;</span>");
     $('.stack-item:last .prev').remove();
 
-    // $(currentTitle).text(text.replace('click', ''));
-
-// ************* AXA NOTE ****************
-// the .last() and .first() right below are what need to be replaced with whatever arrow, etc awesomeness you come up with
-// ***************************************
     $('li.stack-item').last().click(function(){
           firstORlast = 'last';
           var num = 29 - parseInt($(this).css('zIndex'));
@@ -94,54 +89,6 @@ $(document).ajaxComplete(function()
           nextRecords(search_type, query, "first");
           $('.highlight-book').removeClass().addClass('stack-item stack-book heat5');
         });
-
-
-      // Tooltip
-      // $('li.stack-item').hover(function(){
-      //         // Hover over code
-      //         var availability = $(".status").text();
-      //         var location = $(".location").text();
-      //         var title = $(this).attr('title');
-
-      //         if (availability == "Available") {
-      //           $(".tooldeets").css("border-left-color", "#069E87");
-      //           $(".tooldeets").css("color", "#069E87");
-      //         }
-      //         else {
-      //           $(".tooldeets").css("border-left-color", "#B08328");
-      //           $(".tooldeets").css("color", "#B08328");
-      //         }
-
-      //       var num = 29 - parseInt($(this).css('zIndex'));
-      //         $(this).data('tipText', title).removeAttr('title');
-      //         $('<p class="tooltip"></p>').html(title+"<br><span class='tooldeets'><span class='callnum'>"+obj2.LCCallNums[num]+"</span><br><span class='availability'>"+availability+"</span> @ <span class='locationtool'>"+location+"</span></span>").appendTo('body').fadeIn();
-      // }, function() {
-      //         // Hover out code
-      //         $(this).attr('title', $(this).data('tipText'));
-      //         $('.tooltip').remove();
-
-      //          var availability = $(".status").text();
-      //         var location = $(".location").text();
-      //         var title = $(this).attr('title');
-
-      //         if (availability == "Available") {
-      //           $(".tooldeets").css("border-left-color", "#069E87");
-      //           $(".tooldeets").css("color", "#069E87");
-      //         }
-      //         else {
-      //           $(".tooldeets").css("border-left-color", "#B08328");
-      //           $(".tooldeets").css("color", "#B08328");
-      //         }
-
-      //       var num = 29 - parseInt($(this).css('zIndex'));
-      //         $(this).data('tipText', title).removeAttr('title');
-      //         $('<p class="tooltip"></p>').html(title+"<br><span class='tooldeets'><span class='callnum'>"+obj2.LCCallNums[num]+"</span><br><span class='availability'>"+availability+"</span> @ <span class='locationtool'>"+location+"</span></span>").appendTo('body').fadeIn();
-      // }).mousemove(function(e) {
-      //         var mousex = e.pageX + 0; //Get X coordinates
-      //         var mousey = e.pageY + 0; //Get Y coordinates
-      //         $('.tooltip')
-      //         .css({ top: mousey, left: mousex })
-      // });
 
 
             // Tooltip
